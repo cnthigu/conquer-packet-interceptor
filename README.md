@@ -46,4 +46,4 @@ The output DLL will be in `Release/Chat.dll`
 
 ---
 
-**Note**: This is a **study/research project** created to understand Windows internals and network protocols. Use responsibly and ethically.
+**Note**: This is a **study/research project**.
