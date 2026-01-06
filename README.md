@@ -2,6 +2,8 @@
 
 **⭐ If you find this project useful for learning, please consider giving it a star!** ⭐ 
 
+![Conquer Packet Interceptor](img.png)
+
 - **Packet Interception**: Hooking `SendPacket` to capture network packets **before encryption**
 - **Packet Injection**: Injecting custom packets using the original `SendPacket` function
 
