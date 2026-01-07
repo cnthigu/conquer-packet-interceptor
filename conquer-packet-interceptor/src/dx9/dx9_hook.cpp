@@ -178,3 +178,76 @@ bool IsImGuiWindowOpen()
 {
     return g_isGuiWindowOpen;
 }
+
+void ShutdownDirectX9Hooks() 
+{
+    __try 
+    {
+        if (g_gameWindowHandle != NULL && g_originalWindowProcedure != NULL) 
+        {
+            // Verify window is still valid before attempting to restore WNDPROC
+            if (IsWindow(g_gameWindowHandle)) 
+            {
+                SetWindowLongPtrA(g_gameWindowHandle, GWLP_WNDPROC, (LONG_PTR)g_originalWindowProcedure);
+                g_originalWindowProcedure = NULL;
+            }
+        }
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER) 
+    {
+
+    }
+
+    __try 
+    {
+        if (g_isImGuiInitialized) 
+        {
+
+            if (g_dx9Context.device != nullptr) 
+            {
+                ImGui_ImplDX9_Shutdown();
+            }
+            
+            // Shutdown Win32 implementation (safe to call even if DX9 failed)
+            ImGui_ImplWin32_Shutdown();
+            
+            // Destroy ImGui context (releases all fonts, textures, and internal state)
+            ImGui::DestroyContext();
+            
+            g_isImGuiInitialized = false;
+        }
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER) 
+    {
+        // If ImGui cleanup fails (resources may have been freed by the game),
+        g_isImGuiInitialized = false;
+    }
+
+    __try 
+    {
+        if (g_dx9Context.isInitialized) 
+        {
+            // Disable EndScene hook first
+            if (g_dx9Context.originalEndSceneAddress != nullptr) 
+            {
+                MH_DisableHook(g_dx9Context.originalEndSceneAddress);
+                MH_RemoveHook(g_dx9Context.originalEndSceneAddress);
+            }
+            
+            // Disable Reset hook
+            if (g_dx9Context.originalResetAddress != nullptr) 
+            {
+                MH_DisableHook(g_dx9Context.originalResetAddress);
+                MH_RemoveHook(g_dx9Context.originalResetAddress);
+            }
+            
+            g_dx9Context.isInitialized = false;
+        }
+    }
+    __except(EXCEPTION_EXECUTE_HANDLER) 
+    {
+        g_dx9Context.isInitialized = false;
+    }
+
+    g_dx9Context.device = nullptr;
+}

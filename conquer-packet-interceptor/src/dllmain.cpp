@@ -47,7 +47,9 @@ BOOL APIENTRY DllMain(HMODULE moduleHandle, DWORD reason, LPVOID reserved)
         break;
         
     case DLL_PROCESS_DETACH:
+        
         PacketHook_Shutdown();
+        ShutdownDirectX9Hooks();
         MH_Uninitialize();
         break;
     }

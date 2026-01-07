@@ -41,3 +41,6 @@ void InstallWindowProcedureHook();
 // ImGui window control
 void ToggleImGuiWindow();
 bool IsImGuiWindowOpen();
+
+// Cleanup and shutdown
+void ShutdownDirectX9Hooks();
