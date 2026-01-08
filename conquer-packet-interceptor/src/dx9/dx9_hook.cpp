@@ -56,13 +56,31 @@ HRESULT WINAPI HookedEndScene(LPDIRECT3DDEVICE9 device)
 
 HRESULT WINAPI HookedReset(LPDIRECT3DDEVICE9 device, D3DPRESENT_PARAMETERS* presentationParameters) 
 {
+    // Device reset happens when:
+    // - Joining server
+    // - Resizing game window
+    // - UAC popups appear
+    // We must temporarily unhook EndScene to prevent it from being called
+    // while device resources are invalid, which causes access violations.
+    
     if (g_isImGuiInitialized) 
         ImGui_ImplDX9_InvalidateDeviceObjects();
 
+    // Disable EndScene hook during device reset
+    if (g_dx9Context.originalEndSceneAddress) 
+        MH_DisableHook(g_dx9Context.originalEndSceneAddress);
+
     HRESULT result = g_dx9Context.originalReset(device, presentationParameters);
 
-    if (SUCCEEDED(result) && g_isImGuiInitialized) 
-        ImGui_ImplDX9_CreateDeviceObjects();
+    // Re-enable EndScene hook after successful reset
+    if (SUCCEEDED(result)) 
+    {
+        if (g_isImGuiInitialized) 
+            ImGui_ImplDX9_CreateDeviceObjects();
+        
+        if (g_dx9Context.originalEndSceneAddress) 
+            MH_EnableHook(g_dx9Context.originalEndSceneAddress);
+    }
 
     return result;
 }
@@ -180,62 +198,48 @@ bool IsImGuiWindowOpen()
 }
 
 void ShutdownDirectX9Hooks() 
-{
+{  
+    // Step 1: Restore window procedure
     __try 
     {
-        if (g_gameWindowHandle != NULL && g_originalWindowProcedure != NULL) 
+        if (g_gameWindowHandle && g_originalWindowProcedure && IsWindow(g_gameWindowHandle)) 
         {
-            // Verify window is still valid before attempting to restore WNDPROC
-            if (IsWindow(g_gameWindowHandle)) 
-            {
-                SetWindowLongPtrA(g_gameWindowHandle, GWLP_WNDPROC, (LONG_PTR)g_originalWindowProcedure);
-                g_originalWindowProcedure = NULL;
-            }
+            SetWindowLongPtrA(g_gameWindowHandle, GWLP_WNDPROC, (LONG_PTR)g_originalWindowProcedure);
+            g_originalWindowProcedure = NULL;
         }
     }
-    __except(EXCEPTION_EXECUTE_HANDLER) 
-    {
+    __except(EXCEPTION_EXECUTE_HANDLER) {}
 
-    }
-
+    // Step 2: Shutdown ImGui (must be done before game frees font resources)
     __try 
     {
         if (g_isImGuiInitialized) 
         {
-
-            if (g_dx9Context.device != nullptr) 
-            {
+            if (g_dx9Context.device) 
                 ImGui_ImplDX9_Shutdown();
-            }
             
-            // Shutdown Win32 implementation (safe to call even if DX9 failed)
             ImGui_ImplWin32_Shutdown();
-            
-            // Destroy ImGui context (releases all fonts, textures, and internal state)
             ImGui::DestroyContext();
-            
             g_isImGuiInitialized = false;
         }
     }
     __except(EXCEPTION_EXECUTE_HANDLER) 
     {
-        // If ImGui cleanup fails (resources may have been freed by the game),
         g_isImGuiInitialized = false;
     }
 
+    // Step 3: Remove hooks
     __try 
     {
         if (g_dx9Context.isInitialized) 
         {
-            // Disable EndScene hook first
-            if (g_dx9Context.originalEndSceneAddress != nullptr) 
+            if (g_dx9Context.originalEndSceneAddress) 
             {
                 MH_DisableHook(g_dx9Context.originalEndSceneAddress);
                 MH_RemoveHook(g_dx9Context.originalEndSceneAddress);
             }
             
-            // Disable Reset hook
-            if (g_dx9Context.originalResetAddress != nullptr) 
+            if (g_dx9Context.originalResetAddress) 
             {
                 MH_DisableHook(g_dx9Context.originalResetAddress);
                 MH_RemoveHook(g_dx9Context.originalResetAddress);
