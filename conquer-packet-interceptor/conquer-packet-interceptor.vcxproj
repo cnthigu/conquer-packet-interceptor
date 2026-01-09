@@ -22,7 +22,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
     <OutDir>$(SolutionDir)Release\</OutDir>
     <IntDir>$(ProjectDir)$(Configuration)\</IntDir>
@@ -69,6 +69,7 @@
     <ClInclude Include="src\imgui\imstb_textedit.h" />
     <ClInclude Include="src\imgui\imstb_truetype.h" />
     <ClInclude Include="src\libs\minhook\include\MinHook.h" />
+    <ClInclude Include="src\core\crash_logger.h" />
     <ClInclude Include="src\core\hook_manager.h" />
     <ClInclude Include="src\dx9\dx9_hook.h" />
     <ClInclude Include="src\network\GameProtocol.h" />
@@ -77,6 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\dllmain.cpp" />
+    <ClCompile Include="src\core\crash_logger.cpp" />
     <ClCompile Include="src\core\hook_manager.cpp" />
     <ClCompile Include="src\dx9\dx9_hook.cpp" />
     <ClCompile Include="src\network\packet_hook.cpp" />
